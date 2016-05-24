@@ -15,7 +15,7 @@ global <- global[, list(date = as.Date(paste0(year, "-", which(month.abb == mont
                  by = list(type, year = Year, month = variable)]
 
 g1 <- global[, {
-    q1 <- quantile(temperature, c(0, 0.25, 0.5, 0.75, 1), na.rm = TRUE)
+    q1 <- quantile(temperature / 100, c(0, 0.25, 0.5, 0.75, 1), na.rm = TRUE)
     structure(as.list(q1), names = c("c0", "c25", "c50", "c75", "c100"))
 }, list(type,
         year = ifelse(month == "Dec", year + 1, year))][year > 1880 & year < 2016]
@@ -25,7 +25,7 @@ g2 <- g1[, list(mean = mean(c50),
          by = list(year_from = ifelse(year >= 1951 & year <= 1980, 1951, 10 * floor((year - 1) / 10) + 1),
                    type)]
 g3 <- data.table(type = "North Hemisphere", year = (1951 + 1980) / 2,
-                 c50 = global[, max(temperature, na.rm = TRUE)])
+                 c50 = g1[, max(c100, na.rm = TRUE)])
 ggplot(g1,
        aes(color = type, fill = type, x = year, y = c50)) +
     geom_vline(xintercept = c(1951, 1980), color = "gray50") +
@@ -37,16 +37,16 @@ ggplot(g1,
     scale_x_continuous("Meteorological year", breaks = global[, seq(min(year), max(year), 10)]) +
     scale_colour_manual("Hemisphere", values = c("blue", "red")) +
     scale_fill_manual("Hemisphere", values = c("blue", "red")) +
-    scale_y_continuous("Deviation from base period") +
+    scale_y_continuous("Deviation in degrees from the Global base period") +
     facet_wrap(~ type, ncol = 1) +
     geom_text(data = g3,
-              label = "Base period = 0",
+              label = "Base period",
               color = "gray",
               show.legend = FALSE) +
-    geom_text(data = g2[year_from != 1951, list(year = mean(year),
+    geom_text(data = g2[, list(year = mean(year),
                                                 mean = mean[1]),
                         by = list(year_from, type)],
               inherit.aes = FALSE,
-              aes(x = year, y = mean, label = round(mean, 2)),
+              aes(x = year, y = mean, label = paste0(ifelse(mean < 0, "", "+"), round(mean, 3))),
               vjust = -1,
               size = 5)
