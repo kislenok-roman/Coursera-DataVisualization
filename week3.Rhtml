@@ -1,0 +1,61 @@
+<html>
+    <head>
+        <title>American football games between Division IA colleges during regular season Fall 2000</title>
+        <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous"/>
+        <link type="text/css" rel="stylesheet" href="style.css">
+
+        <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
+        <script type="text/javascript" src="drawer.js"></script>
+    </head>
+    <body>
+        <h3>American football games between Division IA colleges during regular season Fall 2000</h3>
+        <p>
+This is a graph visualization representing American football games between Divisioan IA colleges during regular season Fall 2000. The nodes represented are Universities represented by circles, color gives their Division. The nodes are clustered together using community detecting algorithm from R's igraph package. The edges are "tied" together to better represent communities.
+
+Hovering on the node will highligh connected edges (plays) and nodes (Universities). Hovering over circles will also highlight Universities from the same Division.
+        </p>
+        <div id="legendPlaceHolder"></div>
+        <div id="graphPlaceHolder"></div>
+
+<!--begin.rcode echo=FALSE
+suppressPackageStartupMessages(require(jsonlite))
+suppressPackageStartupMessages(require(igraph))
+suppressPackageStartupMessages(require(data.table))
+if (!file.exists("data/football.txt")) {
+    download.file("http://networkdata.ics.uci.edu/data/football/football.txt", "data/football.txt")
+}
+if (!file.exists("data/football.gml")) {
+    download.file("http://networkdata.ics.uci.edu/data/football/football.gml", "data/football.gml")
+}
+end.rcode-->
+        <p>Links:</p>
+        <ul>
+            <li>Based on <a href="http://mbostock.github.io/d3/talk/20111116/bundle.html" target="_blank">d3 examle</a></li>
+            <li>Data: M. Girvan and M. E. J. Newman, Community structure in social and biological networks, Proc. Natl. Acad. Sci. USA 99, 7821-7826 (2002).</li>
+            <li><a href="https://www.opencpu.org/posts/jsonlite-a-smarter-json-encoder" target="_blank">A Robust, High Performance JSON Parser and Generator for R, Jeroen Ooms, Duncan Temple Lang, Lloyd Hilaiel</a></li>
+            <li>Csardi G, Nepusz T: The igraph software package for complex network research, InterJournal, Complex Systems 1695. 2006. http://igraph.org</li>
+        </ul>
+
+        <script type="text/javascript">
+document.addEventListener("DOMContentLoaded", function() {
+    var data =
+<!--begin.rcode echo=FALSE, results="asis"
+    graph <- read.graph("data/football.gml", "gml")
+    c1 <- cluster_leading_eigen(graph)
+    conf <- setnames(suppressWarnings(fread("data/football.txt", skip = 5, sep = "=", header = FALSE)), c("value", "conference"))
+    toJSON(list(nodes = merge(x = as.data.table(vertex_attr(graph)),
+                              y = conf,
+                              by = "value")[order(id), list(key = id, name = label, conference, group = c1$membership)],
+                group = c1$merges,
+                edges = as.data.table(as_data_frame(graph))[, list(source = from - 1, target = to - 1)]))
+end.rcode-->;
+    window.data = data;
+    window.d3drawer.drawGraph("graphPlaceHolder", "legendPlaceHolder", data);
+    d3.select("input[type=range]").on("change", function() {
+        window.d3drawer.changeTension(this.value);
+    });
+    // d3.select(window).on("mousemove", window.d3drawer.mousemove).on("mouseup", window.d3drawer.mouseup);
+});
+        </script>
+    </body>
+</html>
